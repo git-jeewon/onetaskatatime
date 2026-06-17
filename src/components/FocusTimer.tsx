@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import type { Session } from '../types'
+import type { Focus } from '../types'
 import { formatDuration } from '../utils/time'
 
-interface TimerDisplayProps {
-  session: Session
+interface FocusTimerProps {
+  focus: Focus
 }
 
-export function TimerDisplay({ session }: TimerDisplayProps) {
+export function FocusTimer({ focus }: FocusTimerProps) {
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -14,10 +14,10 @@ export function TimerDisplay({ session }: TimerDisplayProps) {
     return () => clearInterval(interval)
   }, [])
 
-  const elapsed = now - new Date(session.startedAt).getTime()
+  const elapsed = now - new Date(focus.startedAt).getTime()
 
-  if (session.timerMinutes) {
-    const total = session.timerMinutes * 60 * 1000
+  if (focus.timerMinutes) {
+    const total = focus.timerMinutes * 60 * 1000
     const remaining = Math.max(0, total - elapsed)
     const isExpired = remaining === 0
 

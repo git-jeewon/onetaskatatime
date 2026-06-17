@@ -1,20 +1,59 @@
-import { ActiveSession } from './components/ActiveSession'
-import { SessionHistory } from './components/SessionHistory'
-import { TaskPrompt } from './components/TaskPrompt'
-import { useSessions } from './hooks/useSessions'
+import { useState } from 'react'
+import { ActiveStep } from './components/ActiveStep'
+import { FocusPrompt } from './components/FocusPrompt'
+import { SmallStepPrompt } from './components/SmallStepPrompt'
+import { SwitchTaskPanel } from './components/SwitchTaskPanel'
+import { TodayHistory } from './components/TodayHistory'
+import { useApp } from './hooks/useApp'
 import {
-  getTodaySessions,
+  getTodayActiveFocuses,
   getUniqueAreas,
   getUniqueSubAreas,
 } from './storage'
 
 function App() {
-  const { sessions, activeSession, startSession, endSession, setHideTimer } =
-    useSessions()
+  const {
+    data,
+    currentFocus,
+    activeStep,
+    startFocus,
+    resumeFocus,
+    startStep,
+    completeStep,
+    switchStep,
+    completeFocus,
+    abandonFocus,
+    setHideTimer,
+    clearCurrentFocus,
+  } = useApp()
 
-  const areas = getUniqueAreas(sessions)
-  const subAreas = getUniqueSubAreas(sessions)
-  const todaySessions = getTodaySessions(sessions)
+  const [showSwitchPanel, setShowSwitchPanel] = useState(false)
+
+  const areas = getUniqueAreas(data.focuses)
+  const subAreas = getUniqueSubAreas(data.focuses)
+  const todayActiveFocuses = getTodayActiveFocuses(data)
+
+  function handleSwitchTask() {
+    switchStep()
+    setShowSwitchPanel(true)
+  }
+
+  function handleResumeFocus(focusId: string) {
+    resumeFocus(focusId)
+    setShowSwitchPanel(false)
+  }
+
+  function handleNewTask() {
+    clearCurrentFocus()
+    setShowSwitchPanel(false)
+  }
+
+  function handleAbandonFocus() {
+    abandonFocus()
+    setShowSwitchPanel(false)
+  }
+
+  const showHistory = !currentFocus && !showSwitchPanel
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -25,27 +64,50 @@ function App() {
       </header>
 
       <main className="flex-1 flex flex-col items-center px-6 pb-12">
-        {activeSession ? (
-          <ActiveSession
-            session={activeSession}
-            onDone={() => endSession(activeSession.id, 'done')}
-            onGiveUp={() => endSession(activeSession.id, 'gave_up')}
+        {!currentFocus ? (
+          <FocusPrompt
+            areas={areas}
+            subAreas={subAreas}
+            todayFocuses={todayActiveFocuses}
+            onStart={startFocus}
+            onResume={resumeFocus}
+          />
+        ) : activeStep ? (
+          <ActiveStep
+            focus={currentFocus}
+            step={activeStep}
+            onDone={completeStep}
+            onSwitchTask={handleSwitchTask}
+            onCompleteFocus={completeFocus}
             onToggleHideTimer={() =>
-              setHideTimer(activeSession.id, !activeSession.hideTimer)
+              setHideTimer(!currentFocus.hideTimer)
             }
           />
         ) : (
-          <TaskPrompt
-            areas={areas}
-            subAreas={subAreas}
-            onStart={startSession}
+          <SmallStepPrompt
+            focus={currentFocus}
+            onStart={startStep}
+            onCompleteFocus={completeFocus}
+            onAbandonFocus={handleAbandonFocus}
+            onSwitchTask={() => setShowSwitchPanel(true)}
+            onToggleHideTimer={() =>
+              setHideTimer(!currentFocus.hideTimer)
+            }
           />
         )}
 
-        {!activeSession && (
-          <SessionHistory sessions={todaySessions} />
-        )}
+        {showHistory && <TodayHistory data={data} />}
       </main>
+
+      {showSwitchPanel && (
+        <SwitchTaskPanel
+          currentFocusId={currentFocus?.id ?? ''}
+          todayFocuses={todayActiveFocuses}
+          onResume={handleResumeFocus}
+          onNewTask={handleNewTask}
+          onCancel={() => setShowSwitchPanel(false)}
+        />
+      )}
     </div>
   )
 }
