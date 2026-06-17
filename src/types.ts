@@ -10,6 +10,7 @@ export interface Focus {
   status: TaskStatus
   timerMinutes?: number
   hideTimer?: boolean
+  accumulatedPauseMs?: number
 }
 
 export interface Step {
@@ -19,6 +20,7 @@ export interface Step {
   startedAt: string
   endedAt?: string
   status: TaskStatus
+  accumulatedPauseMs?: number
 }
 
 export interface NewFocus {
@@ -33,4 +35,6 @@ export interface AppData {
   focuses: Focus[]
   steps: Step[]
   currentFocusId: string | null
+  onBreak: boolean
+  breakStartedAt: string | null
 }

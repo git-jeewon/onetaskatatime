@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ActiveStep } from './components/ActiveStep'
+import { BreakScreen } from './components/BreakScreen'
 import { FocusPrompt } from './components/FocusPrompt'
 import { SmallStepPrompt } from './components/SmallStepPrompt'
 import { SwitchTaskPanel } from './components/SwitchTaskPanel'
@@ -25,6 +26,8 @@ function App() {
     abandonFocus,
     setHideTimer,
     clearCurrentFocus,
+    startBreak,
+    endBreak,
   } = useApp()
 
   const [showSwitchPanel, setShowSwitchPanel] = useState(false)
@@ -32,6 +35,7 @@ function App() {
   const areas = getUniqueAreas(data.focuses)
   const subAreas = getUniqueSubAreas(data.focuses)
   const todayActiveFocuses = getTodayActiveFocuses(data)
+  const canTakeBreak = !!currentFocus && !data.onBreak
 
   function handleSwitchTask() {
     switchStep()
@@ -53,18 +57,35 @@ function App() {
     setShowSwitchPanel(false)
   }
 
-  const showHistory = !currentFocus && !showSwitchPanel
+  const showHistory =
+    !currentFocus && !showSwitchPanel && !data.onBreak
 
   return (
     <div className="min-h-dvh flex flex-col">
-      <header className="px-6 py-5">
+      <header className="px-6 py-5 flex items-center justify-between">
         <p className="text-sm font-medium text-muted tracking-wide">
           One Task at a Time
         </p>
+        {canTakeBreak && (
+          <button
+            type="button"
+            onClick={startBreak}
+            className="text-sm text-muted hover:text-ink transition-colors"
+          >
+            Take a break
+          </button>
+        )}
       </header>
 
       <main className="flex-1 flex flex-col items-center px-6 pb-12">
-        {!currentFocus ? (
+        {data.onBreak && data.breakStartedAt ? (
+          <BreakScreen
+            breakStartedAt={data.breakStartedAt}
+            focus={currentFocus}
+            step={activeStep}
+            onResume={endBreak}
+          />
+        ) : !currentFocus ? (
           <FocusPrompt
             areas={areas}
             subAreas={subAreas}
@@ -99,7 +120,7 @@ function App() {
         {showHistory && <TodayHistory data={data} />}
       </main>
 
-      {showSwitchPanel && (
+      {showSwitchPanel && !data.onBreak && (
         <SwitchTaskPanel
           currentFocusId={currentFocus?.id ?? ''}
           todayFocuses={todayActiveFocuses}

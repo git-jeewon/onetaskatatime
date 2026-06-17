@@ -17,7 +17,28 @@ export function formatTime(iso: string): string {
   })
 }
 
-export function sessionDuration(session: { startedAt: string; endedAt?: string }): number {
+export function getActiveElapsedMs(
+  startedAt: string,
+  accumulatedPauseMs = 0,
+  breakStartedAt: string | null = null,
+  now = Date.now(),
+): number {
+  const start = new Date(startedAt).getTime()
+  const currentBreakMs = breakStartedAt
+    ? now - new Date(breakStartedAt).getTime()
+    : 0
+  return Math.max(0, now - start - accumulatedPauseMs - currentBreakMs)
+}
+
+export function sessionDuration(session: {
+  startedAt: string
+  endedAt?: string
+  accumulatedPauseMs?: number
+}): number {
   const end = session.endedAt ? new Date(session.endedAt).getTime() : Date.now()
-  return end - new Date(session.startedAt).getTime()
+  return (
+    end -
+    new Date(session.startedAt).getTime() -
+    (session.accumulatedPauseMs ?? 0)
+  )
 }

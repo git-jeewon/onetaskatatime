@@ -160,6 +160,58 @@ export function useApp() {
     setData((prev) => ({ ...prev, currentFocusId: null }))
   }, [])
 
+  const startBreak = useCallback(() => {
+    setData((prev) => {
+      if (!getCurrentFocus(prev) || prev.onBreak) return prev
+      return {
+        ...prev,
+        onBreak: true,
+        breakStartedAt: new Date().toISOString(),
+      }
+    })
+  }, [])
+
+  const endBreak = useCallback(() => {
+    setData((prev) => {
+      if (!prev.onBreak || !prev.breakStartedAt) return prev
+
+      const focus = getCurrentFocus(prev)
+      if (!focus) {
+        return { ...prev, onBreak: false, breakStartedAt: null }
+      }
+
+      const step = getActiveStep(prev, focus.id)
+      const pauseMs =
+        Date.now() - new Date(prev.breakStartedAt).getTime()
+
+      return {
+        ...prev,
+        onBreak: false,
+        breakStartedAt: null,
+        focuses: prev.focuses.map((f) =>
+          f.id === focus.id
+            ? {
+                ...f,
+                accumulatedPauseMs:
+                  (f.accumulatedPauseMs ?? 0) + pauseMs,
+              }
+            : f,
+        ),
+        steps: step
+          ? prev.steps.map((s) =>
+              s.id === step.id
+                ? {
+                    ...s,
+                    accumulatedPauseMs:
+                      (s.accumulatedPauseMs ?? 0) + pauseMs,
+                  }
+                : s,
+            )
+          : prev.steps,
+      }
+    })
+  }, [])
+
   return {
     data,
     currentFocus,
@@ -173,5 +225,7 @@ export function useApp() {
     abandonFocus,
     setHideTimer,
     clearCurrentFocus,
+    startBreak,
+    endBreak,
   }
 }

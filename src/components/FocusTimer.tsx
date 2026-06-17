@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { Focus } from '../types'
-import { formatDuration } from '../utils/time'
+import { formatDuration, getActiveElapsedMs } from '../utils/time'
 
 interface FocusTimerProps {
   focus: Focus
+  breakStartedAt?: string | null
 }
 
-export function FocusTimer({ focus }: FocusTimerProps) {
+export function FocusTimer({ focus, breakStartedAt = null }: FocusTimerProps) {
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -14,7 +15,12 @@ export function FocusTimer({ focus }: FocusTimerProps) {
     return () => clearInterval(interval)
   }, [])
 
-  const elapsed = now - new Date(focus.startedAt).getTime()
+  const elapsed = getActiveElapsedMs(
+    focus.startedAt,
+    focus.accumulatedPauseMs,
+    breakStartedAt,
+    now,
+  )
 
   if (focus.timerMinutes) {
     const total = focus.timerMinutes * 60 * 1000

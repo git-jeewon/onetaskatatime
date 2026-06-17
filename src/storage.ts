@@ -4,7 +4,29 @@ const STORAGE_KEY = 'one-task-at-a-time-data'
 const LEGACY_KEY = 'one-task-at-a-time-sessions'
 
 function emptyData(): AppData {
-  return { focuses: [], steps: [], currentFocusId: null }
+  return {
+    focuses: [],
+    steps: [],
+    currentFocusId: null,
+    onBreak: false,
+    breakStartedAt: null,
+  }
+}
+
+export function normalizeData(parsed: Partial<AppData>): AppData {
+  return {
+    focuses: (parsed.focuses ?? []).map((f) => ({
+      ...f,
+      accumulatedPauseMs: f.accumulatedPauseMs ?? 0,
+    })),
+    steps: (parsed.steps ?? []).map((s) => ({
+      ...s,
+      accumulatedPauseMs: s.accumulatedPauseMs ?? 0,
+    })),
+    currentFocusId: parsed.currentFocusId ?? null,
+    onBreak: parsed.onBreak ?? false,
+    breakStartedAt: parsed.breakStartedAt ?? null,
+  }
 }
 
 function migrateLegacy(): AppData | null {
@@ -61,11 +83,11 @@ function migrateLegacy(): AppData | null {
     }
 
     const activeFocus = focuses.find((f) => f.status === 'active')
-    return {
+    return normalizeData({
       focuses,
       steps,
       currentFocusId: activeFocus?.id ?? null,
-    }
+    })
   } catch {
     return null
   }
@@ -75,8 +97,8 @@ export function loadData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as AppData
-      if (parsed?.focuses && parsed?.steps) return parsed
+      const parsed = JSON.parse(raw) as Partial<AppData>
+      if (parsed?.focuses && parsed?.steps) return normalizeData(parsed)
     }
   } catch {
     // fall through to migration
